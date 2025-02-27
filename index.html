@@ -8,7 +8,7 @@
         body { font-family: Arial, sans-serif; margin: 20px; }
         .komen-container { max-width: 500px; margin: auto; }
         input, textarea { width: 100%; margin-bottom: 10px; padding: 8px; }
-        button { background: blue; color: white; padding: 10px; border: none; cursor: pointer; }
+        button { background: blue; color: white; padding: 10px; border: none; cursor: pointer; margin-right: 5px; }
         .komen-list { margin-top: 20px; }
         .komen-item { background: #f1f1f1; padding: 10px; margin-bottom: 10px; border-radius: 5px; position: relative; }
         .komen-time { font-size: 12px; color: gray; }
@@ -26,31 +26,43 @@
     </div>
 
     <script>
-        const sheetURL = "https://script.google.com/macros/s/AKfycbznFdk-19CeDBhyR_gGXqVwxuiIUNMqEPOt02RuFB52Mf0gblqDON5DLcwEHhNrIgXc/exec";
+        const sheetURL = "https://script.google.com/macros/s/AKfycbznFdk-19CeDBhyR_gGXqVwxuiIUNMqEPOt02RuFB52Mf0gblqDON5DLcwEHhNrIgXc/exec"; // Gantikan dengan URL sebenar
 
         function tambahKomen() {
-            let namaInput = document.getElementById('namaInput').value;
-            let komenInput = document.getElementById('komenInput').value;
+            let namaInput = document.getElementById('namaInput').value.trim();
+            let komenInput = document.getElementById('komenInput').value.trim();
             let tarikh = new Date().toLocaleString();
-            if (namaInput.trim() === '' || komenInput.trim() === '') return;
-            
+
+            if (!namaInput || !komenInput) {
+                alert("Sila isi nama dan komen sebelum menghantar!");
+                return;
+            }
+
             fetch(sheetURL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ nama: namaInput, komen: komenInput, tarikh: tarikh })
-            }).then(response => response.json())
-              .then(() => {
-                  paparkanKomen();
-                  document.getElementById('komenInput').value = '';
-              });
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Berjaya hantar:", data);
+                document.getElementById('komenInput').value = '';
+                paparkanKomen();
+            })
+            .catch(error => {
+                console.error("Ralat semasa menghantar komen:", error);
+                alert("Terdapat masalah menghantar komen. Sila cuba lagi.");
+            });
         }
 
         function paparkanKomen() {
             fetch(sheetURL)
                 .then(response => response.json())
                 .then(data => {
+                    console.log("Data komen diterima:", data);
                     let komenDiv = document.getElementById('komenList');
                     komenDiv.innerHTML = '';
+
                     data.forEach(item => {
                         let div = document.createElement('div');
                         div.classList.add('komen-item');
@@ -64,13 +76,24 @@
                         }
                         komenDiv.appendChild(div);
                     });
+                })
+                .catch(error => {
+                    console.error("Ralat semasa mengambil komen:", error);
+                    alert("Gagal mengambil komen. Sila cuba lagi.");
                 });
         }
 
         function padamKomen(id) {
             fetch(sheetURL + "?id=" + id, { method: "DELETE" })
                 .then(response => response.json())
-                .then(() => paparkanKomen());
+                .then(() => {
+                    console.log("Komen dipadam:", id);
+                    paparkanKomen();
+                })
+                .catch(error => {
+                    console.error("Gagal memadam komen:", error);
+                    alert("Tidak dapat memadam komen. Sila cuba lagi.");
+                });
         }
 
         paparkanKomen();
